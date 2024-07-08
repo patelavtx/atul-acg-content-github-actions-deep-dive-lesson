@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - main
+      - lesson-build
+  pull_request:
+      - main
 
 jobs:
   build:
