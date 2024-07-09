@@ -79,9 +79,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     needs: upload
-    strategy:
-      matrix:
-        input: ["Hello", "Hi"]
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
