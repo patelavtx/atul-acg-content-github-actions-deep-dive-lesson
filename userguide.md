@@ -1,4 +1,4 @@
-# User Guide
+# iAtul User Guide
 
 ## Install
 
