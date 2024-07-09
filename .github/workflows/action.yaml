@@ -1,14 +1,20 @@
-name: Deploy my Lambda Function
+name: Deploy my Lambda Function - Test from main after PR
 
+# trigger on all push events to main branch
 # trigger on all push events to main branch
 on: 
   push:
     branches:
+      - lesson-nonprod
+  pull_request:
+    branches:
       - main
+    types:
+      - closed    
 
 jobs:
 
-  lint:
+  lintjob:
     runs-on: ubuntu-latest
     steps: 
       - name: Check out code
@@ -16,7 +22,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: 3.9
       - name: Install linting libraries
         run: |
             cd function
@@ -30,14 +36,14 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: lint
+    needs: lintjob
     steps:
       - name: Check out code
         uses: actions/checkout@v2
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: 3.9
       - name: Install libraries
         run: |
             cd function
@@ -66,11 +72,11 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: eu-west-2
       - name: Upload to S3
-        run: aws s3 cp ${{ github.sha }}.zip s3://<YOUR BUCKET NAME HERE>/${{ github.repository }}/${{ github.sha }}.zip
+        run: aws s3 cp ${{ github.sha }}.zip s3://atul-gha/${{ github.repository }}/${{ github.sha }}.zip
 
-  nonprod:
+  test:
     runs-on: ubuntu-latest
     needs: upload
     strategy:
@@ -82,41 +88,34 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: eu-west-2
       - name: Create test function
         run: |
-            aws lambda create-function --function-name test-function-${{ matrix.input }} \
-              --code S3Bucket=<YOUR BUCKET NAME HERE>,S3Key=${{ github.repository }}/${{ github.sha }}.zip \
-              --handler lambda_function.lambda_handler --runtime python3.8 \
-              --role arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/<YOUR ROLE NAME HERE>
-      - name: Invoke test function 
-        run: |
-            aws lambda invoke --function-name test-function-${{ matrix.input }} \
-              --payload $(echo "{\"input\": \"${{ matrix.input }}\"}" | base64) \
-              --output json out 
-            if grep -q "Error" out; then
-              exit1
-            fi
+            aws lambda create-function --function-name test-function \
+              --code S3Bucket=atul-gha,S3Key=${{ github.repository }}/${{ github.sha }}.zip \
+              --handler lambda_function.lambda_handler --runtime python3.9 \
+              --role arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/TestLambda
+      - name: Wait 30 seconds
+        run: sleep 30
       - name: Destroy test function
         if: ${{ always() }}
-        run: |
-            aws lambda delete-function --function-name test-function-${{ matrix.input }}
+        run: aws lambda delete-function --function-name test-function
 
   deploy:
     runs-on: ubuntu-latest
-    needs: upload
+    needs: test
     steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: eu-west-2
       - name: Update function code
         run: |
             aws lambda update-function-code \
-              --function-name <YOUR FUNCTION NAME HERE> \
-              --s3-bucket <YOUR BUCKET NAME HERE> \
+              --function-name atul-gha-funct \
+              --s3-bucket atul-gha \
               --s3-key ${{ github.repository }}/${{ github.sha }}.zip \
               --publish
 
@@ -131,3 +130,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CONFIG_FILE: mkdocs.yaml
+
