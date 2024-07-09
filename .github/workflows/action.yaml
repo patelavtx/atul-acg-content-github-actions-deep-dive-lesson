@@ -1,4 +1,4 @@
-name: Deploy my Lambda Function
+name: Deploy my Lambda Function - Test from main after PR
 
 # trigger on all push events to main branch
 # trigger on all push events to main branch
@@ -14,7 +14,7 @@ on:
 
 jobs:
 
-  lint:
+  lintjob:
     runs-on: ubuntu-latest
     steps: 
       - name: Check out code
@@ -36,7 +36,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    needs: lint
+    needs: lintjob
     steps:
       - name: Check out code
         uses: actions/checkout@v2
