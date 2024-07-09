@@ -5,10 +5,13 @@ on:
   push:
     branches:
       - lesson-lint
+      - main
   pull_request:
     branches:
       - main
- 
+    types:
+      - closed    
+
 jobs:
 
   lintjob:
