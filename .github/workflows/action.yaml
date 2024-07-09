@@ -1,11 +1,10 @@
 name: Deploy my Lambda Function - Test from main after PR
 
 # trigger on all push events to main branch
-# trigger on all push events to main branch
 on: 
   push:
     branches:
-      - lesson-nonprod
+      - main
   pull_request:
     branches:
       - main
