@@ -1,4 +1,4 @@
-name: Deploy my Lambda Function
+name: Deploy my Lambda Function - Test from main after PR
 
 # trigger on all push events to main branch
 on: 
